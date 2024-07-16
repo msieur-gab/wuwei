@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détecteur de rythme cardiaque et sons relaxants</title>
+    <title>Heart Rate Detector and Relaxing Sounds</title>
     <style>
         #video {
             width: 300px;
             height: 300px;
             background-color: #000;
         }
-        #startButton {
+        #toggleButton {
             margin-top: 10px;
         }
         #logDisplay {
@@ -26,7 +26,7 @@
     <video id="video"></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <br>
-    <button id="startButton">Démarrer</button>
+    <button id="toggleButton">Start</button>
     <p id="bpmDisplay">BPM: --</p>
     <div id="logDisplay"></div>
 
@@ -34,7 +34,7 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const startButton = document.getElementById('startButton');
+        const toggleButton = document.getElementById('toggleButton');
         const bpmDisplay = document.getElementById('bpmDisplay');
         const logDisplay = document.getElementById('logDisplay');
 
@@ -42,8 +42,10 @@
         let lastFrameTime = 0;
         let stream;
         let track;
+        let isRunning = false;
+        let animationFrameId;
 
-        // Liste de sons MP3 (à remplacer par vos propres fichiers)
+        // List of MP3 sounds (replace with your own files)
         const sounds = {
             slow: ['slow1.mp3', 'slow2.mp3', 'slow3.mp3'],
             medium: ['medium1.mp3', 'medium2.mp3', 'medium3.mp3'],
@@ -53,7 +55,7 @@
         let currentSounds = [];
         let audioElements = [];
 
-        startButton.addEventListener('click', startDetection);
+        toggleButton.addEventListener('click', toggleDetection);
 
         function log(message) {
             const logEntry = document.createElement('p');
@@ -62,9 +64,17 @@
             logDisplay.scrollTop = logDisplay.scrollHeight;
         }
 
+        async function toggleDetection() {
+            if (isRunning) {
+                stopDetection();
+            } else {
+                startDetection();
+            }
+        }
+
         async function startDetection() {
             try {
-                log("Démarrage de la détection...");
+                log("Starting detection...");
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment' },
                     audio: false
@@ -73,27 +83,42 @@
                 video.srcObject = stream;
                 video.play();
 
-                // Activer le flash
+                // Activate flash
                 track = stream.getVideoTracks()[0];
                 const capabilities = track.getCapabilities();
                 if (capabilities.torch) {
                     await track.applyConstraints({
                         advanced: [{ torch: true }]
                     });
-                    log("Flash activé");
+                    log("Flash activated");
                 } else {
-                    log("Le flash n'est pas disponible sur cet appareil.");
+                    log("Flash is not available on this device.");
                 }
 
-                requestAnimationFrame(processFrame);
-                log("Détection démarrée");
+                isRunning = true;
+                toggleButton.textContent = "Stop";
+                animationFrameId = requestAnimationFrame(processFrame);
+                log("Detection started");
             } catch (err) {
-                log("Erreur d'accès à la caméra: " + err.message);
+                log("Camera access error: " + err.message);
             }
         }
 
+        function stopDetection() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            stopAllSounds();
+            isRunning = false;
+            toggleButton.textContent = "Start";
+            log("Detection stopped");
+        }
+
         function processFrame(timestamp) {
-            if (timestamp - lastFrameTime > 30) { // Limite à environ 30 FPS
+            if (timestamp - lastFrameTime > 30) { // Limit to about 30 FPS
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const redAverage = getRedAverage(imageData.data);
@@ -108,7 +133,7 @@
 
                 lastFrameTime = timestamp;
             }
-            requestAnimationFrame(processFrame);
+            animationFrameId = requestAnimationFrame(processFrame);
         }
 
         function getRedAverage(data) {
@@ -139,26 +164,30 @@
         }
 
         function playSounds() {
-            log("Changement de catégorie de sons : " + currentSounds.join(', '));
+            log("Changing sound category: " + currentSounds.join(', '));
             
-            // Arrêter et supprimer les sons précédents
-            audioElements.forEach(audio => {
-                audio.pause();
-                audio.remove();
-                log("Son arrêté : " + audio.src);
-            });
-            audioElements = [];
+            // Stop and remove previous sounds
+            stopAllSounds();
 
-            // Jouer les nouveaux sons
+            // Play new sounds
             currentSounds.forEach(sound => {
                 const audio = new Audio(sound);
                 audio.loop = true;
-                audio.onerror = () => log("Erreur de chargement du son : " + sound);
-                audio.onloadeddata = () => log("Son chargé : " + sound);
-                audio.play().then(() => log("Lecture démarrée : " + sound))
-                             .catch(err => log("Erreur de lecture : " + sound + " - " + err.message));
+                audio.onerror = () => log("Error loading sound: " + sound);
+                audio.onloadeddata = () => log("Sound loaded: " + sound);
+                audio.play().then(() => log("Playback started: " + sound))
+                             .catch(err => log("Playback error: " + sound + " - " + err.message));
                 audioElements.push(audio);
             });
+        }
+
+        function stopAllSounds() {
+            audioElements.forEach(audio => {
+                audio.pause();
+                audio.remove();
+                log("Sound stopped: " + audio.src);
+            });
+            audioElements = [];
         }
     </script>
 </body>
