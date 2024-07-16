@@ -1,16 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- [Le reste du head reste inchangé] -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Rate Detector and Relaxing Sounds</title>
+    <style>
+        #video {
+            width: 300px;
+            height: 300px;
+            background-color: #000;
+        }
+        #startButton, #playPauseButton {
+            margin-top: 10px;
+        }
+        #progressBar {
+            width: 100%;
+            height: 20px;
+        }
+        #logDisplay {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 150px;
+            overflow-y: scroll;
+        }
+    </style>
 </head>
 <body>
-    <!-- [Le corps du HTML reste inchangé] -->
+    <video id="video"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <br>
+    <button id="startButton">Start Detection</button>
+    <button id="playPauseButton" disabled>Play</button>
+    <progress id="progressBar" value="0" max="100"></progress>
+    <p id="bpmDisplay">BPM: --</p>
+    <div id="logDisplay"></div>
 
     <script>
-        // [Les autres déclarations de variables restent inchangées]
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const playPauseButton = document.getElementById('playPauseButton');
+        const progressBar = document.getElementById('progressBar');
+        const bpmDisplay = document.getElementById('bpmDisplay');
+        const logDisplay = document.getElementById('logDisplay');
 
+        let heartRateData = [];
+        let stream;
+        let track;
+        let detectionStartTime;
+        let detectionInterval;
+        let isPlaying = false;
+
+        const DETECTION_DURATION = 20000; // 20 seconds
         const SOUNDS_PATH = 'sounds/';
 
+        // List of MP3 sounds
         const sounds = {
             slow: ['slow1.mp3', 'slow2.mp3', 'slow3.mp3'],
             medium: ['medium1.mp3', 'medium2.mp3', 'medium3.mp3'],
@@ -19,18 +65,22 @@
 
         let currentSounds = [];
         let audioElements = [];
-        let isPlaying = false;
 
         startButton.addEventListener('click', startDetection);
         playPauseButton.addEventListener('click', togglePlayPause);
 
-        // [Les autres fonctions restent inchangées]
+        function log(message) {
+            const logEntry = document.createElement('p');
+            logEntry.textContent = message;
+            logDisplay.appendChild(logEntry);
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+        }
 
         async function startDetection() {
-            // Arrêter les sons en cours
+            // Stop all sounds
             stopAllSounds();
             
-            // Réinitialiser l'interface utilisateur
+            // Reset UI
             playPauseButton.disabled = true;
             playPauseButton.textContent = "Play";
             isPlaying = false;
@@ -70,14 +120,15 @@
             }
         }
 
-        function stopAllSounds() {
-            audioElements.forEach(audio => {
-                audio.pause();
-                audio.currentTime = 0;
-            });
-            audioElements = [];
-            currentSounds = [];
-            log("All sounds stopped");
+        function processFrame() {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const redAverage = getRedAverage(imageData.data);
+            heartRateData.push({ time: Date.now(), value: redAverage });
+
+            if (Date.now() - detectionStartTime >= DETECTION_DURATION) {
+                stopDetection();
+            }
         }
 
         function stopDetection() {
@@ -97,7 +148,53 @@
             log("Detection completed");
         }
 
-        // [Les autres fonctions restent inchangées]
+        function updateProgress() {
+            const updateProgressInterval = setInterval(() => {
+                const elapsed = Date.now() - detectionStartTime;
+                const progress = (elapsed / DETECTION_DURATION) * 100;
+                progressBar.value = Math.min(progress, 100);
+
+                if (elapsed >= DETECTION_DURATION) {
+                    clearInterval(updateProgressInterval);
+                }
+            }, 100);
+        }
+
+        function getRedAverage(data) {
+            let total = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                total += data[i];
+            }
+            return total / (data.length / 4);
+        }
+
+        function calculateBPM(data) {
+            const differences = data.map((d, i, arr) => i > 0 ? d.value - arr[i-1].value : 0);
+            
+            const mean = differences.reduce((a, b) => a + b, 0) / differences.length;
+            const variance = differences.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / differences.length;
+            const stdDev = Math.sqrt(variance);
+            
+            const threshold = stdDev * 1.5;
+            const significantChanges = differences.filter(d => Math.abs(d) > threshold).length;
+            
+            const duration = (data[data.length - 1].time - data[0].time) / 1000; // in seconds
+            const bpm = (significantChanges / 2) * (60 / duration);
+            
+            return Math.round(Math.max(40, Math.min(200, bpm)));
+        }
+
+        function updateSounds(bpm) {
+            log("Calculated BPM: " + bpm);
+            let category;
+            if (bpm < 60) category = 'slow';
+            else if (bpm < 100) category = 'medium';
+            else category = 'fast';
+
+            currentSounds = sounds[category];
+            log("Sound category selected: " + category);
+            loadSounds();
+        }
 
         function loadSounds() {
             audioElements = currentSounds.map(sound => {
@@ -132,6 +229,16 @@
                 audio.pause();
                 log("Sound paused: " + audio.src);
             });
+        }
+
+        function stopAllSounds() {
+            audioElements.forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
+            });
+            audioElements = [];
+            currentSounds = [];
+            log("All sounds stopped");
         }
     </script>
 </body>
