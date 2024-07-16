@@ -55,12 +55,12 @@
             const phase = (elapsed / 1000) % secondsPerBeat / secondsPerBeat;
 
             // Simulate heart rate color change
-            const intensity = Math.sin(phase * Math.PI) * 0.5 + 0.5; // Changed to Math.sin(phase * Math.PI) for a full cycle
+            const intensity = Math.pow(Math.sin(phase * Math.PI), 3); // Utilisez une puissance impaire pour préserver le signe
             
-            // Color interpolation between dark orange-yellow and red
-            const red = Math.floor(200 + intensity * 55);  // 200 to 255
-            const green = Math.floor(100 - intensity * 100); // 100 to 0
-            const blue = 0;
+            // Color interpolation with increased contrast
+            const red = Math.floor(220 + intensity * 35);    // 220 to 255
+            const green = Math.floor(140 - intensity * 140); // 140 to 0
+            const blue = Math.floor(0 - intensity * 0);      // 0 (inchangé, pour référence future)
 
             ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -99,7 +99,7 @@
         toggleButton.addEventListener('click', toggleSimulation);
 
         // Initial color
-        ctx.fillStyle = 'rgb(200, 100, 0)';
+        ctx.fillStyle = 'rgb(200, 140, 0)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     </script>
 </body>
