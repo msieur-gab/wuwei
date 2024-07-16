@@ -54,6 +54,7 @@
         let isPlaying = false;
 
         const DETECTION_DURATION = 20000; // 20 seconds
+        const SOUNDS_PATH = 'sounds/';
 
         // List of MP3 sounds (replace with your own files)
         const sounds = {
@@ -188,7 +189,7 @@
 
         function loadSounds() {
             audioElements = currentSounds.map(sound => {
-                const audio = new Audio(sound);
+                const audio = new Audio(SOUNDS_PATH + sound);
                 audio.loop = true;
                 audio.onerror = () => log("Error loading sound: " + sound);
                 audio.onloadeddata = () => log("Sound loaded: " + sound);
