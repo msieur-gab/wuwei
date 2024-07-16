@@ -55,10 +55,14 @@
             const phase = (elapsed / 1000) % secondsPerBeat / secondsPerBeat;
 
             // Simulate heart rate color change
-            const intensity = Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
-            const red = Math.floor(intensity * 255);
+            const intensity = Math.sin(phase * Math.PI) * 0.5 + 0.5; // Changed to Math.sin(phase * Math.PI) for a full cycle
+            
+            // Color interpolation between dark orange-yellow and red
+            const red = Math.floor(200 + intensity * 55);  // 200 to 255
+            const green = Math.floor(100 - intensity * 100); // 100 to 0
+            const blue = 0;
 
-            ctx.fillStyle = `rgb(${red}, 0, 0)`;
+            ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (isRunning) {
@@ -80,16 +84,22 @@
 
         bpmInput.addEventListener('input', function() {
             bpmSlider.value = this.value;
+            if (isRunning) {
+                startTime = 0; // Reset the animation phase when BPM changes
+            }
         });
 
         bpmSlider.addEventListener('input', function() {
             bpmInput.value = this.value;
+            if (isRunning) {
+                startTime = 0; // Reset the animation phase when BPM changes
+            }
         });
 
         toggleButton.addEventListener('click', toggleSimulation);
 
         // Initial color
-        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillStyle = 'rgb(200, 100, 0)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     </script>
 </body>
