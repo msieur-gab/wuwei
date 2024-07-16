@@ -55,6 +55,7 @@
 
         const DETECTION_DURATION = 20000; // 20 seconds
         const SOUNDS_PATH = 'sounds/';
+        const FPS = 30;
 
         // List of MP3 sounds
         const sounds = {
@@ -77,10 +78,8 @@
         }
 
         async function startDetection() {
-            // Stop all sounds
             stopAllSounds();
             
-            // Reset UI
             playPauseButton.disabled = true;
             playPauseButton.textContent = "Play";
             isPlaying = false;
@@ -96,7 +95,6 @@
                 video.srcObject = stream;
                 video.play();
 
-                // Activate flash
                 track = stream.getVideoTracks()[0];
                 const capabilities = track.getCapabilities();
                 if (capabilities.torch) {
@@ -111,7 +109,7 @@
                 startButton.disabled = true;
                 heartRateData = [];
                 detectionStartTime = Date.now();
-                detectionInterval = setInterval(processFrame, 30); // About 30 FPS
+                detectionInterval = setInterval(processFrame, 1000 / FPS);
                 updateProgress();
 
                 log("Detection started");
@@ -125,6 +123,17 @@
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const redAverage = getRedAverage(imageData.data);
             heartRateData.push({ time: Date.now(), value: redAverage });
+
+            // Limit stored data to 20 seconds
+            if (heartRateData.length > 20 * FPS) {
+                heartRateData.shift();
+            }
+
+            // Update BPM display in real-time
+            if (heartRateData.length > 5 * FPS) {  // Wait for 5 seconds of data
+                const bpm = calculateBPM(heartRateData);
+                bpmDisplay.textContent = `BPM: ${bpm}`;
+            }
 
             if (Date.now() - detectionStartTime >= DETECTION_DURATION) {
                 stopDetection();
@@ -169,19 +178,40 @@
         }
 
         function calculateBPM(data) {
-            const differences = data.map((d, i, arr) => i > 0 ? d.value - arr[i-1].value : 0);
+            const windowSize = Math.min(data.length, 10 * FPS); // 10 seconds window
+            const recentData = data.slice(-windowSize);
             
-            const mean = differences.reduce((a, b) => a + b, 0) / differences.length;
-            const variance = differences.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / differences.length;
-            const stdDev = Math.sqrt(variance);
+            const filteredData = lowPassFilter(recentData.map(d => d.value));
+            const peaks = findPeaks(filteredData);
             
-            const threshold = stdDev * 1.5;
-            const significantChanges = differences.filter(d => Math.abs(d) > threshold).length;
-            
-            const duration = (data[data.length - 1].time - data[0].time) / 1000; // in seconds
-            const bpm = (significantChanges / 2) * (60 / duration);
-            
+            if (peaks.length < 2) return 60; // Default value if not enough peaks
+
+            const averageInterval = calculateAverageInterval(peaks);
+            const bpm = 60 / (averageInterval / FPS);
+
             return Math.round(Math.max(40, Math.min(200, bpm)));
+        }
+
+        function lowPassFilter(data, alpha = 0.1) {
+            return data.reduce((filtered, value, index) => {
+                if (index === 0) return [value];
+                return [...filtered, alpha * value + (1 - alpha) * filtered[index - 1]];
+            }, []);
+        }
+
+        function findPeaks(data) {
+            const peaks = [];
+            for (let i = 1; i < data.length - 1; i++) {
+                if (data[i] > data[i - 1] && data[i] > data[i + 1]) {
+                    peaks.push(i);
+                }
+            }
+            return peaks;
+        }
+
+        function calculateAverageInterval(peaks) {
+            const intervals = peaks.slice(1).map((peak, index) => peak - peaks[index]);
+            return intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
         }
 
         function updateSounds(bpm) {
