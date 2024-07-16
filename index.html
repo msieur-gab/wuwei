@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détecteur de rythme cardiaque et sons relaxants</title>
+    <style>
+        #video {
+            width: 300px;
+            height: 300px;
+            background-color: #000;
+        }
+        #startButton {
+            margin-top: 10px;
+        }
+        #logDisplay {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 150px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+    <video id="video"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <br>
+    <button id="startButton">Démarrer</button>
+    <p id="bpmDisplay">BPM: --</p>
+    <div id="logDisplay"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const bpmDisplay = document.getElementById('bpmDisplay');
+        const logDisplay = document.getElementById('logDisplay');
+
+        let heartRateData = [];
+        let lastFrameTime = 0;
+        let stream;
+        let track;
+
+        // Liste de sons MP3 (à remplacer par vos propres fichiers)
+        const sounds = {
+            slow: ['slow1.mp3', 'slow2.mp3', 'slow3.mp3'],
+            medium: ['medium1.mp3', 'medium2.mp3', 'medium3.mp3'],
+            fast: ['fast1.mp3', 'fast2.mp3', 'fast3.mp3']
+        };
+
+        let currentSounds = [];
+        let audioElements = [];
+
+        startButton.addEventListener('click', startDetection);
+
+        function log(message) {
+            const logEntry = document.createElement('p');
+            logEntry.textContent = message;
+            logDisplay.appendChild(logEntry);
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+        }
+
+        async function startDetection() {
+            try {
+                log("Démarrage de la détection...");
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false
+                });
+                
+                video.srcObject = stream;
+                video.play();
+
+                // Activer le flash
+                track = stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    await track.applyConstraints({
+                        advanced: [{ torch: true }]
+                    });
+                    log("Flash activé");
+                } else {
+                    log("Le flash n'est pas disponible sur cet appareil.");
+                }
+
+                requestAnimationFrame(processFrame);
+                log("Détection démarrée");
+            } catch (err) {
+                log("Erreur d'accès à la caméra: " + err.message);
+            }
+        }
+
+        function processFrame(timestamp) {
+            if (timestamp - lastFrameTime > 30) { // Limite à environ 30 FPS
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const redAverage = getRedAverage(imageData.data);
+                heartRateData.push({ time: timestamp, value: redAverage });
+
+                if (heartRateData.length > 30) {
+                    heartRateData.shift();
+                    const bpm = calculateBPM(heartRateData);
+                    bpmDisplay.textContent = `BPM: ${bpm.toFixed(0)}`;
+                    updateSounds(bpm);
+                }
+
+                lastFrameTime = timestamp;
+            }
+            requestAnimationFrame(processFrame);
+        }
+
+        function getRedAverage(data) {
+            let total = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                total += data[i];
+            }
+            return total / (data.length / 4);
+        }
+
+        function calculateBPM(data) {
+            const changes = data.map((d, i, arr) => i > 0 ? d.value - arr[i-1].value : 0);
+            const positiveChanges = changes.filter(c => c > 0).length;
+            const duration = (data[data.length - 1].time - data[0].time) / 1000;
+            return (positiveChanges / duration) * 60;
+        }
+
+        function updateSounds(bpm) {
+            let category;
+            if (bpm < 60) category = 'slow';
+            else if (bpm < 100) category = 'medium';
+            else category = 'fast';
+
+            if (JSON.stringify(currentSounds) !== JSON.stringify(sounds[category])) {
+                currentSounds = sounds[category];
+                playSounds();
+            }
+        }
+
+        function playSounds() {
+            log("Changement de catégorie de sons : " + currentSounds.join(', '));
+            
+            // Arrêter et supprimer les sons précédents
+            audioElements.forEach(audio => {
+                audio.pause();
+                audio.remove();
+                log("Son arrêté : " + audio.src);
+            });
+            audioElements = [];
+
+            // Jouer les nouveaux sons
+            currentSounds.forEach(sound => {
+                const audio = new Audio(sound);
+                audio.loop = true;
+                audio.onerror = () => log("Erreur de chargement du son : " + sound);
+                audio.onloadeddata = () => log("Son chargé : " + sound);
+                audio.play().then(() => log("Lecture démarrée : " + sound))
+                             .catch(err => log("Erreur de lecture : " + sound + " - " + err.message));
+                audioElements.push(audio);
+            });
+        }
+    </script>
+</body>
+</html>
