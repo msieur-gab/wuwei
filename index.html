@@ -158,14 +158,28 @@
             return total / (data.length / 4);
         }
 
-        function calculateBPM(data) {
-            const changes = data.map((d, i, arr) => i > 0 ? d.value - arr[i-1].value : 0);
-            const positiveChanges = changes.filter(c => c > 0).length;
-            const duration = (data[data.length - 1].time - data[0].time) / 1000;
-            return (positiveChanges / duration) * 60;
+         function calculateBPM(data) {
+            // Calculer les différences entre les valeurs consécutives
+            const differences = data.map((d, i, arr) => i > 0 ? d.value - arr[i-1].value : 0);
+            
+            // Calculer l'écart-type des différences
+            const mean = differences.reduce((a, b) => a + b, 0) / differences.length;
+            const variance = differences.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / differences.length;
+            const stdDev = Math.sqrt(variance);
+            
+            // Compter les pics (changements significatifs)
+            const threshold = stdDev * 2; // Ajustez ce multiplicateur si nécessaire
+            const significantChanges = differences.filter(d => Math.abs(d) > threshold).length;
+            
+            // Calculer le BPM
+            const duration = (data[data.length - 1].time - data[0].time) / 1000; // en secondes
+            const bpm = (significantChanges / 2) * (60 / duration); // Multiplié par 60 pour obtenir le BPM
+            
+            return Math.round(bpm);
         }
 
         function updateSounds(bpm) {
+            log("Calculated BPM: " + bpm);
             let category;
             if (bpm < 60) category = 'slow';
             else if (bpm < 100) category = 'medium';
