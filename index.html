@@ -37,6 +37,7 @@
     <div id="logDisplay"></div>
 
     <script>
+        const DETECTION_DURATION = 20000; // 20 seconds
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -158,7 +159,7 @@
             return total / (data.length / 4);
         }
 
-         function calculateBPM(data) {
+        function calculateBPM(data) {
             // Calculer les différences entre les valeurs consécutives
             const differences = data.map((d, i, arr) => i > 0 ? d.value - arr[i-1].value : 0);
             
@@ -168,14 +169,14 @@
             const stdDev = Math.sqrt(variance);
             
             // Compter les pics (changements significatifs)
-            const threshold = stdDev * 2; // Ajustez ce multiplicateur si nécessaire
+            const threshold = stdDev * 1.5; // Multiplicateur ajusté
             const significantChanges = differences.filter(d => Math.abs(d) > threshold).length;
             
             // Calculer le BPM
             const duration = (data[data.length - 1].time - data[0].time) / 1000; // en secondes
             const bpm = (significantChanges / 2) * (60 / duration); // Multiplié par 60 pour obtenir le BPM
             
-            return Math.round(bpm);
+            return Math.round(Math.max(40, Math.min(200, bpm))); // Limiter le BPM entre 40 et 200
         }
 
         function updateSounds(bpm) {
