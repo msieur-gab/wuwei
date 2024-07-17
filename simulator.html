@@ -36,7 +36,7 @@
     </div>
 
     <script>
-       const canvas = document.getElementById('heartRateCanvas');
+const canvas = document.getElementById('heartRateCanvas');
 const ctx = canvas.getContext('2d');
 const bpmInput = document.getElementById('bpmInput');
 const bpmSlider = document.getElementById('bpmSlider');
@@ -54,36 +54,48 @@ function updateColor(timestamp) {
     const secondsPerBeat = 60 / bpm;
     const phase = (elapsed / 1000) % secondsPerBeat / secondsPerBeat;
 
-    // Simulate heart rate color change
-    const intensity = Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
-    
-    // Create radial gradient
-    const gradientCenterX = -50 + Math.sin(phase * Math.PI * 2) * 20;
-    const gradientCenterY = -50 + Math.cos(phase * Math.PI * 2) * 20;
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Create base dark red background
+    ctx.fillStyle = 'rgb(120, 0, 0)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate arc center position
+    const centerX = -50 + Math.sin(phase * Math.PI * 2) * 20;
+    const centerY = -50 + Math.cos(phase * Math.PI * 2) * 20;
+
+    // Create gradient for the subtle arc
     const gradient = ctx.createRadialGradient(
-        gradientCenterX, gradientCenterY, 0,
-        gradientCenterX, gradientCenterY, canvas.width * 1.5
+        centerX, centerY, 0,
+        centerX, centerY, canvas.width
     );
 
-    // Interpolate between dark red and light yellow
-    const innerRed = Math.floor(200 + intensity * 55);  // 200 to 255
-    const innerGreen = Math.floor(50 + intensity * 150); // 50 to 200
-    const innerBlue = Math.floor(intensity * 50);       // 0 to 50
-
-    const outerRed = Math.floor(150 + intensity * 30);  // 150 to 180
-    const outerGreen = Math.floor(intensity * 50);      // 0 to 50
-    const outerBlue = 0;
+    // Interpolate between dark red and light orange
+    const intensity = Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
+    const innerRed = Math.floor(180 + intensity * 75);  // 180 to 255
+    const innerGreen = Math.floor(50 + intensity * 100); // 50 to 150
+    const innerBlue = Math.floor(intensity * 30);       // 0 to 30
 
     gradient.addColorStop(0, `rgb(${innerRed}, ${innerGreen}, ${innerBlue})`);
-    gradient.addColorStop(1, `rgb(${outerRed}, ${outerGreen}, ${outerBlue})`);
+    gradient.addColorStop(0.3, `rgba(${innerRed}, ${innerGreen}, ${innerBlue}, 0.5)`);
+    gradient.addColorStop(1, 'rgba(120, 0, 0, 0)');
 
+    // Draw the subtle arc
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(canvas.width, 0);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.lineTo(0, canvas.height);
+    ctx.closePath();
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fill();
 
     if (isRunning) {
         animationId = requestAnimationFrame(updateColor);
     }
 }
+
 
 
 function toggleSimulation() {
