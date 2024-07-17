@@ -5,7 +5,8 @@ export class BPMAnalyzer {
         this.heartRateData = [];
         this.minValidBPM = 30;
         this.maxValidBPM = 220;
-        this.minVariationThreshold = 2; // Adjust based on your tests
+        this.minVariationThreshold = CONFIG.BPM_ANALYZER.MIN_VARIATION_THRESHOLD;
+        this.peakThreshold = CONFIG.BPM_ANALYZER.PEAK_THRESHOLD;
     }
 
     addDataPoint(value) {
@@ -17,6 +18,7 @@ export class BPMAnalyzer {
 
     calculateBPM() {
         if (!this.isSignalValid()) {
+            console.log("Signal invalid:", this.heartRateData.slice(-20));
             return { bpm: -1, isValid: false, message: "Invalid signal. Please try again." };
         }
 
@@ -26,12 +28,18 @@ export class BPMAnalyzer {
         const filteredData = this.lowPassFilter(recentData.map(d => d.value));
         const peaks = this.findPeaks(filteredData);
         
+        console.log("Filtered data:", filteredData);
+        console.log("Detected peaks:", peaks);
+
         if (peaks.length < 2) {
-            return { bpm: -1, isValid: false, message: "Not enough peaks detected. Please try again." };
+            console.log("Not enough peaks detected");
+            return { bpm: -1, isValid: false, message: "Insufficient data. Keep finger steady." };
         }
 
         const averageInterval = this.calculateAverageInterval(peaks);
         const bpm = 60 / (averageInterval / CONFIG.FPS);
+
+        console.log("Calculated BPM:", bpm);
 
         if (bpm < this.minValidBPM || bpm > this.maxValidBPM) {
             return { bpm: -1, isValid: false, message: "BPM out of valid range. Please try again." };
@@ -51,7 +59,7 @@ export class BPMAnalyzer {
         return (max - min) > this.minVariationThreshold;
     }
 
-    lowPassFilter(data, alpha = 0.1) {
+    lowPassFilter(data, alpha = CONFIG.BPM_ANALYZER.LOW_PASS_ALPHA) {
         return data.reduce((filtered, value, index) => {
             if (index === 0) return [value];
             return [...filtered, alpha * value + (1 - alpha) * filtered[index - 1]];
@@ -60,8 +68,12 @@ export class BPMAnalyzer {
 
     findPeaks(data) {
         const peaks = [];
+        const avgValue = data.reduce((sum, val) => sum + val, 0) / data.length;
+        const stdDev = Math.sqrt(data.reduce((sum, val) => sum + Math.pow(val - avgValue, 2), 0) / data.length);
+        
         for (let i = 1; i < data.length - 1; i++) {
-            if (data[i] > data[i - 1] && data[i] > data[i + 1]) {
+            if (data[i] > data[i - 1] && data[i] > data[i + 1] && 
+                data[i] > avgValue + this.peakThreshold * stdDev) {
                 peaks.push(i);
             }
         }
