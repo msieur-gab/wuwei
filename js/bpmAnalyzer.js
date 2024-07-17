@@ -5,7 +5,7 @@ export class BPMAnalyzer {
         this.heartRateData = [];
         this.minValidBPM = 30;
         this.maxValidBPM = 220;
-        this.minVariationThreshold = 5; // Adjust based on your tests
+        this.minVariationThreshold = 2; // Adjust based on your tests
     }
 
     addDataPoint(value) {
