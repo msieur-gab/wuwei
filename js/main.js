@@ -113,6 +113,10 @@ function stopDetection() {
     
     const result = bpmAnalyzer.calculateBPM();
     updateBPMDisplay(result);
+
+    if (result.isValid) {
+        soundComposer.updateSounds(result.bpm);  
+    }
     
     startButton.disabled = false;
     playPauseButton.disabled = false;
