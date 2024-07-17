@@ -4,9 +4,9 @@ export class SoundComposer {
     constructor(logFunction) {
         this.log = logFunction; // Utilisez la fonction log passée en paramètre
         this.sounds = {
-            slow: ['slow1.mp3', 'slow2.mp3'],
-            medium: ['medium1.mp3', 'medium2.mp3'],
-            fast: ['fast1.mp3', 'fast2.mp3']
+            slow: ['slow1.mp3', 'slow2.mp3', 'slow3.mp3'],
+            medium: ['medium1.mp3', 'medium2.mp3', 'medium3.mp3'],
+            fast: ['fast1.mp3', 'fast2.mp3', 'fast3.mp3']
         };
         this.currentSounds = [];
         this.audioElements = [];
