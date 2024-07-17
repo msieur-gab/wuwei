@@ -152,6 +152,7 @@ function togglePlayPause() {
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('versionDisplay').textContent = `Version: ${CONFIG.VERSION}`;
     soundComposer = new SoundComposer(log);
     startButton.addEventListener('click', startDetection);
     playPauseButton.addEventListener('click', togglePlayPause);
