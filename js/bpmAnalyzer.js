@@ -3,6 +3,9 @@ import { CONFIG } from './config.js';
 export class BPMAnalyzer {
     constructor() {
         this.heartRateData = [];
+        this.minValidBPM = 30;
+        this.maxValidBPM = 220;
+        this.minVariationThreshold = 5; // Adjust based on your tests
     }
 
     addDataPoint(value) {
@@ -13,18 +16,39 @@ export class BPMAnalyzer {
     }
 
     calculateBPM() {
+        if (!this.isSignalValid()) {
+            return { bpm: -1, isValid: false, message: "Invalid signal. Please try again." };
+        }
+
         const windowSize = Math.min(this.heartRateData.length, 10 * CONFIG.FPS);
         const recentData = this.heartRateData.slice(-windowSize);
         
         const filteredData = this.lowPassFilter(recentData.map(d => d.value));
         const peaks = this.findPeaks(filteredData);
         
-        if (peaks.length < 2) return 60;
+        if (peaks.length < 2) {
+            return { bpm: -1, isValid: false, message: "Not enough peaks detected. Please try again." };
+        }
 
         const averageInterval = this.calculateAverageInterval(peaks);
         const bpm = 60 / (averageInterval / CONFIG.FPS);
 
-        return Math.round(Math.max(40, Math.min(200, bpm)));
+        if (bpm < this.minValidBPM || bpm > this.maxValidBPM) {
+            return { bpm: -1, isValid: false, message: "BPM out of valid range. Please try again." };
+        }
+
+        return { bpm: Math.round(bpm), isValid: true, message: "Valid measurement." };
+    }
+
+    isSignalValid() {
+        if (this.heartRateData.length < 5 * CONFIG.FPS) return false; // Not enough data
+
+        const values = this.heartRateData.map(d => d.value);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+
+        // Check if there's sufficient variation
+        return (max - min) > this.minVariationThreshold;
     }
 
     lowPassFilter(data, alpha = 0.1) {
