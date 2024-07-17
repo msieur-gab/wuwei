@@ -6,8 +6,8 @@ export class SoundComposer {
         this.sounds = {
             slow: [
                 { file: 'slow1.mp3', volume: 0.7, delay: 0 },
-                { file: 'slow2.mp3', volume: 0.5, delay: 2000 },
-                { file: 'slow2.mp3', volume: 0.5, delay: 2000 }
+                { file: 'slow2.mp3', volume: 0.5, delay: 0 },
+                { file: 'slow3.mp3', volume: 0.9, delay: 0 }
             ],
             medium: [
                 { file: 'medium1.mp3', volume: 0.4, delay: 0 },
