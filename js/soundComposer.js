@@ -12,7 +12,6 @@ export class SoundComposer {
             medium: [
                 { file: 'medium1.mp3', volume: 0.4, delay: 0 },
                 { file: 'medium2.mp3', volume: 0.8, delay: 0 }
-                // { file: 'medium3.mp3', volume: 0.1, delay: 20000 }
             ],
             fast: [
                 { file: 'fast1.mp3', volume: 0.8, delay: 0 },
