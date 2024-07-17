@@ -4,7 +4,7 @@ export const CONFIG = {
     DETECTION_DURATION: 15000, // 30 seconds
     SOUNDS_PATH: './sounds/',
     FPS: 30,
-    USE_FLASH: true,
+    USE_FLASH: false,
     BPM_ANALYZER: {
         MIN_VARIATION_THRESHOLD: 0.3,
         PEAK_THRESHOLD: 0.15,
