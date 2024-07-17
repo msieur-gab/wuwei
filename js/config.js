@@ -1,7 +1,7 @@
 export const CONFIG = {
     VERSION: '1.0.0',
     DEBUG: true,
-    DETECTION_DURATION: 30000, // 30 seconds
+    DETECTION_DURATION: 15000, // 30 seconds
     SOUNDS_PATH: './sounds/',
     FPS: 30,
     USE_FLASH: true,
