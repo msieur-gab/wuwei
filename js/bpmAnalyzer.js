@@ -7,6 +7,7 @@ export class BPMAnalyzer {
         this.maxValidBPM = 220;
         this.minVariationThreshold = CONFIG.BPM_ANALYZER.MIN_VARIATION_THRESHOLD;
         this.peakThreshold = CONFIG.BPM_ANALYZER.PEAK_THRESHOLD;
+        this.lastValidBPM = null;
     }
 
     addDataPoint(value) {
@@ -19,7 +20,7 @@ export class BPMAnalyzer {
     calculateBPM() {
         if (!this.isSignalValid()) {
             console.log("Signal invalid:", this.heartRateData.slice(-20));
-            return { bpm: -1, isValid: false, message: "Invalid signal. Please try again." };
+            return { bpm: this.lastValidBPM, isValid: false, message: "Keep your finger steady" };
         }
 
         const windowSize = Math.min(this.heartRateData.length, 10 * CONFIG.FPS);
@@ -33,7 +34,7 @@ export class BPMAnalyzer {
 
         if (peaks.length < 2) {
             console.log("Not enough peaks detected");
-            return { bpm: -1, isValid: false, message: "Insufficient data. Keep finger steady." };
+            return { bpm: this.lastValidBPM, isValid: false, message: "Insufficient data. Keep finger steady." };
         }
 
         const averageInterval = this.calculateAverageInterval(peaks);
@@ -42,10 +43,11 @@ export class BPMAnalyzer {
         console.log("Calculated BPM:", bpm);
 
         if (bpm < this.minValidBPM || bpm > this.maxValidBPM) {
-            return { bpm: -1, isValid: false, message: "BPM out of valid range. Please try again." };
+            return { bpm: this.lastValidBPM, isValid: false, message: "BPM out of valid range. Please try again." };
         }
 
-        return { bpm: Math.round(bpm), isValid: true, message: "Valid measurement." };
+        this.lastValidBPM = Math.round(bpm);
+        return { bpm: this.lastValidBPM, isValid: true, message: "Valid measurement" };
     }
 
     isSignalValid() {
