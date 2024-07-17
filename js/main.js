@@ -24,6 +24,7 @@ function log(message) {
         logEntry.textContent = message;
         logDisplay.appendChild(logEntry);
         logDisplay.scrollTop = logDisplay.scrollHeight;
+        console.log(message);
     }
 }
 
@@ -36,12 +37,12 @@ async function startDetection() {
 
     try {
         log("Starting detection...");
-        log(`USE_FLASH setting: ${CONFIG.USE_FLASH}`);  // Log the USE_FLASH setting
+        log(`USE_FLASH setting: ${CONFIG.USE_FLASH}`);
 
         stream = await navigator.mediaDevices.getUserMedia({
             video: { 
                 facingMode: 'environment',
-                advanced: CONFIG.USE_FLASH ? [{ torch: true }] : []  // Request torch if USE_FLASH is true
+                advanced: CONFIG.USE_FLASH ? [{ torch: true }] : []
             },
             audio: false
         });
@@ -91,7 +92,6 @@ function processFrame() {
             bpmDisplay.textContent = `BPM: ${result.bpm}`;
         } else {
             bpmDisplay.textContent = result.message;
-            log(result.message);
         }
     }
 
@@ -112,7 +112,6 @@ function stopDetection() {
         soundComposer.updateSounds(result.bpm);
     } else {
         bpmDisplay.textContent = result.message;
-        log(result.message);
     }
     
     startButton.disabled = false;
