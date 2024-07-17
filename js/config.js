@@ -5,8 +5,8 @@ export const CONFIG = {
     FPS: 30,
     USE_FLASH: true,
     BPM_ANALYZER: {
-        MIN_VARIATION_THRESHOLD: 2,
-        PEAK_THRESHOLD: 0.5,
-        LOW_PASS_ALPHA: 0.1
+        MIN_VARIATION_THRESHOLD: 0.5,
+        PEAK_THRESHOLD: 0.3,
+        LOW_PASS_ALPHA: 0.2
     }
 };
