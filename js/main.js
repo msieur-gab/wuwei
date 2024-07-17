@@ -36,8 +36,13 @@ async function startDetection() {
 
     try {
         log("Starting detection...");
+        log(`USE_FLASH setting: ${CONFIG.USE_FLASH}`);  // Log the USE_FLASH setting
+
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
+            video: { 
+                facingMode: 'environment',
+                advanced: CONFIG.USE_FLASH ? [{ torch: true }] : []  // Request torch if USE_FLASH is true
+            },
             audio: false
         });
         
@@ -46,17 +51,20 @@ async function startDetection() {
 
         track = stream.getVideoTracks()[0];
         const capabilities = track.getCapabilities();
-        if (CONFIG.USE_FLASH && capabilities.torch) {
-            try {
-                await track.applyConstraints({
-                    advanced: [{ torch: true }]
-                });
-                log("Flash activated");
-            } catch (error) {
-                log("Failed to activate flash: " + error.message);
+        const settings = track.getSettings();
+
+        if (CONFIG.USE_FLASH) {
+            if (capabilities.torch) {
+                if (settings.torch) {
+                    log("Flash successfully activated");
+                } else {
+                    log("Flash activation failed. It might not be supported on this device.");
+                }
+            } else {
+                log("Flash is not available on this device.");
             }
-        } else if (CONFIG.USE_FLASH) {
-            log("Flash is not available on this device or is disabled in config.");
+        } else {
+            log("Flash usage is disabled in config.");
         }
 
         startButton.disabled = true;
