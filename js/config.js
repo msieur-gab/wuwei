@@ -3,5 +3,5 @@ export const CONFIG = {
     DETECTION_DURATION: 15000, // 20 seconds
     SOUNDS_PATH: './sounds/',
     FPS: 30,
-    USE_FLASH: false
+    USE_FLASH: true
 };
