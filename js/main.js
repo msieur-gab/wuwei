@@ -42,13 +42,17 @@ async function startDetection() {
 
         track = stream.getVideoTracks()[0];
         const capabilities = track.getCapabilities();
-        if (capabilities.torch) {
-            await track.applyConstraints({
-                advanced: [{ torch: true }]
-            });
-            log("Flash activated");
-        } else {
-            log("Flash is not available on this device.");
+        if (CONFIG.USE_FLASH && capabilities.torch) {
+            try {
+                await track.applyConstraints({
+                    advanced: [{ torch: true }]
+                });
+                log("Flash activated");
+            } catch (error) {
+                log("Failed to activate flash: " + error.message);
+            }
+        } else if (CONFIG.USE_FLASH) {
+            log("Flash is not available on this device or is disabled in config.");
         }
 
         startButton.disabled = true;
