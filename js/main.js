@@ -12,6 +12,7 @@ const startButton = document.getElementById('startButton');
 const playPauseButton = document.getElementById('playPauseButton');
 const progressBar = document.getElementById('progressBar');
 const bpmDisplay = document.getElementById('bpmDisplay');
+const userFeedback = document.getElementById('userFeedback');
 const logDisplay = document.getElementById('logDisplay');
 
 // Set canvas size
@@ -34,6 +35,7 @@ async function startDetection() {
     playPauseButton.disabled = true;
     playPauseButton.textContent = "Play";
     bpmDisplay.textContent = "BPM: --";
+    userFeedback.textContent = "";
 
     try {
         log("Starting detection...");
@@ -88,16 +90,19 @@ function processFrame() {
 
     if (bpmAnalyzer.heartRateData.length > 5 * CONFIG.FPS) {
         const result = bpmAnalyzer.calculateBPM();
-        if (result.isValid) {
-            bpmDisplay.textContent = `BPM: ${result.bpm}`;
-        } else {
-            bpmDisplay.textContent = result.message;
-        }
+        updateBPMDisplay(result);
     }
 
     if (Date.now() - detectionStartTime >= CONFIG.DETECTION_DURATION) {
         stopDetection();
     }
+}
+
+function updateBPMDisplay(result) {
+    if (result.bpm !== null) {
+        bpmDisplay.textContent = `BPM: ${result.bpm}`;
+    }
+    userFeedback.textContent = result.message;
 }
 
 function stopDetection() {
@@ -107,12 +112,7 @@ function stopDetection() {
     }
     
     const result = bpmAnalyzer.calculateBPM();
-    if (result.isValid) {
-        bpmDisplay.textContent = `BPM: ${result.bpm}`;
-        soundComposer.updateSounds(result.bpm);
-    } else {
-        bpmDisplay.textContent = result.message;
-    }
+    updateBPMDisplay(result);
     
     startButton.disabled = false;
     playPauseButton.disabled = false;
