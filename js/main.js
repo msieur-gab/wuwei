@@ -7,12 +7,16 @@ let detectionStartTime, detectionInterval;
 
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const startButton = document.getElementById('startButton');
 const playPauseButton = document.getElementById('playPauseButton');
 const progressBar = document.getElementById('progressBar');
 const bpmDisplay = document.getElementById('bpmDisplay');
 const logDisplay = document.getElementById('logDisplay');
+
+// Set canvas size
+canvas.width = 320;
+canvas.height = 240;
 
 function log(message) {
     if (CONFIG.DEBUG) {
@@ -127,7 +131,7 @@ function togglePlayPause() {
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    soundComposer = new SoundComposer();
+    soundComposer = new SoundComposer(log);
     startButton.addEventListener('click', startDetection);
     playPauseButton.addEventListener('click', togglePlayPause);
 });
