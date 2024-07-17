@@ -78,8 +78,13 @@ function processFrame() {
     bpmAnalyzer.addDataPoint(redAverage);
 
     if (bpmAnalyzer.heartRateData.length > 5 * CONFIG.FPS) {
-        const bpm = bpmAnalyzer.calculateBPM();
-        bpmDisplay.textContent = `BPM: ${bpm}`;
+        const result = bpmAnalyzer.calculateBPM();
+        if (result.isValid) {
+            bpmDisplay.textContent = `BPM: ${result.bpm}`;
+        } else {
+            bpmDisplay.textContent = result.message;
+            log(result.message);
+        }
     }
 
     if (Date.now() - detectionStartTime >= CONFIG.DETECTION_DURATION) {
@@ -93,9 +98,14 @@ function stopDetection() {
         stream.getTracks().forEach(track => track.stop());
     }
     
-    const bpm = bpmAnalyzer.calculateBPM();
-    bpmDisplay.textContent = `BPM: ${bpm}`;
-    soundComposer.updateSounds(bpm);
+    const result = bpmAnalyzer.calculateBPM();
+    if (result.isValid) {
+        bpmDisplay.textContent = `BPM: ${result.bpm}`;
+        soundComposer.updateSounds(result.bpm);
+    } else {
+        bpmDisplay.textContent = result.message;
+        log(result.message);
+    }
     
     startButton.disabled = false;
     playPauseButton.disabled = false;
